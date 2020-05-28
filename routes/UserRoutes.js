@@ -11,7 +11,7 @@ const passport = require('passport')
 
 
 
-router.post('/signup', passport.authenticate('signup', { session : false }) , (req, res, next) => {
+router.post('/signup', passport.authenticate('signup',) , (req, res, next) => {
     res.send({
         'message' : 'Signup Successful',
         user : req.user
@@ -24,7 +24,7 @@ router.post('/login', (req, res, next) => {
     if(!userData.username || !userData.password){
         res.status(500).send("Incomplete Data")
     } else {
-        passport.authenticate('login', { session : false } , (err, user, info) => {
+        passport.authenticate('login', (err, user, info) => {
             try{
                 if(err || !user){
                     const error = new Error('An Error Occured in the Middleware')
@@ -46,7 +46,7 @@ router.post('/login', (req, res, next) => {
     }
 })
 
-router.get('/', passport.authenticate('jwt', { session : false }), (req, res, next) => {
+router.get('/', passport.authenticate('jwt',), (req, res, next) => {
     res.send({
         message : "You are Logged In!",
         user : req.user
