@@ -4,53 +4,54 @@ const router = require('express').Router();
 require('../config/mongoose')
 const User = require('../models/User')
 
-const auth = require('./auth');
+const jwt = require('jsonwebtoken')
 const passport = require('passport')
 
 
 
 
 
-router.post('/signup', auth.optional, async (req, res) => {
-    const userData = req.body;
-    if(!userData.username || !userData.name || !userData.password){
-        res.status(500).send('Incomplete Data');
-    } else {
-        const user = new User({
-            name : userData.name,
-            username : userData.username,
-        })
-        try{ 
-           await user.setPassword(userData.password)
-           await user.save()
-           res.send(user.toAuthJSON())
-        } catch(e){
-            res.status(400).send(user)
-        }
-    }
+router.post('/signup', passport.authenticate('signup', { session : false }) , (req, res, next) => {
+    res.send({
+        'message' : 'Signup Successful',
+        user : req.user
+    })
 })
 
 
-router.post('/login', auth.optional, (req, res, next) => {
-    const { body : {userData }} = req;
+router.post('/login', (req, res, next) => {
+    const userData = req.body;
     if(!userData.username || !userData.password){
         res.status(500).send("Incomplete Data")
     } else {
-        return passport.authenticate('local', { session : false} , (err, passportUser, info) => {
-            if(err){
-                return res.;
+        passport.authenticate('login', { session : false } , (err, user, info) => {
+            try{
+                if(err || !user){
+                    const error = new Error('An Error Occured in the Middleware')
+                    return next(error)
+                }
+                
+                body = {id : user._id, username : user.username}
+                req.login(user, {session : false}, async(error) => {
+                    if(error) return next(error)
+                    const token = await jwt.sign({user : body}, 'secret');
+                    body = user.toAuthJSON()
+                    body.token = token;
+                    return res.send(body);
+                })
+            } catch(e){
+                return next(error);
             }
-
-            if(passportUser){
-                const user = passportUser;
-                user.token = passportUser.generateJWT()
-
-                return res.send(user);
-            }
-
-            return status(400).info;
         })(req, res, next);
     }
 })
+
+router.get('/', passport.authenticate('jwt', { session : false }), (req, res, next) => {
+    res.send({
+        message : "You are Logged In!",
+        user : req.user
+    })
+})
+
 
 module.exports = router

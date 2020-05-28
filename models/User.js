@@ -5,12 +5,12 @@ const jwt = require('jsonwebtoken')
 const userSchema = mongoose.Schema({
     name : {
         type : String,
-        required : true
     },
     username : {
         type : String,
         trim: true,
-        required : true
+        required : true,
+        unique : true
     },
     password : {
         type : String,
@@ -19,10 +19,12 @@ const userSchema = mongoose.Schema({
         type: String
     }
 })
-userSchema.validatePassword = function(passoword){
-    const password = crypto.pbkdf2Sync(passoword, this.salt, 10000, 512, 'sha512').toString('hex');
+userSchema.methods.validatePassword = function (password){
+    const password = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex');
     return this.password === password;
 } 
+
+
 userSchema.methods.setPassword = function (password){
     this.salt = crypto.randomBytes(16).toString('hex');
     this.password = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex');
@@ -43,11 +45,22 @@ userSchema.methods.generateJWT = function() {
 userSchema.methods.toAuthJSON = function() {
 return {
     _id: this._id,
-    name: this.name,
     username: this.username,
-    token: this.generateJWT(),
 };
 };
+
+userSchema.statics.findByCredentials = async (username, password) => {
+    const user  = await User.findOne({username: username})
+    if(!user){
+        throw new Error('Unable to Login');
+    }
+
+    const isMatch = user.password === crypto.pbkdf2Sync(password, user.salt, 10000, 512, 'sha512').toString('hex');
+    if(!isMatch){
+        throw new Error('Unable to Login');
+    }
+    return user;
+}
 
 const User = mongoose.model('User', userSchema);
 
