@@ -3,8 +3,12 @@ const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 
 const userSchema = mongoose.Schema({
+    googleId : {
+        type : String,
+    },
     name : {
         type : String,
+        required : true,
     },
     username : {
         type : String,
@@ -20,8 +24,8 @@ const userSchema = mongoose.Schema({
     }
 })
 userSchema.methods.validatePassword = function (password){
-    const password = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex');
-    return this.password === password;
+    const hash = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex');
+    return this.password === hash;
 } 
 
 
@@ -29,6 +33,8 @@ userSchema.methods.setPassword = function (password){
     this.salt = crypto.randomBytes(16).toString('hex');
     this.password = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex');
 }
+
+
 
 userSchema.methods.generateJWT = function() {
     const today = new Date();

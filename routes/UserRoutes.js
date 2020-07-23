@@ -7,8 +7,19 @@ const User = require('../models/User')
 const jwt = require('jsonwebtoken')
 const passport = require('passport')
 
+router.get('/oauth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 
+router.get('/oauth/google/callback', 
+  passport.authenticate('google', { failureRedirect: 'failure' }),
+  function(req, res) {
+    res.send(req.user);
+  });
+
+router.get('/oauth/google/failure', (req, res) => {
+    res.status(500).send('Error Occured');
+})
 
 
 router.post('/signup', passport.authenticate('signup',) , (req, res, next) => {
